@@ -1,58 +1,36 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaCheck } from 'react-icons/fa';
 import './Services.css';
+import { getServices } from '../services/api';
 
 const Services = () => {
-  const services = [
-    {
-      id: 1,
-      title: 'Luxury Spa Manicure',
-      price: '$45',
-      duration: '60 min',
-      description: 'Complete nail care with exfoliation, massage, and polish application.',
-      features: ['Nail shaping', 'Cuticle care', 'Hand massage', 'Polish application']
-    },
-    {
-      id: 2,
-      title: 'Deluxe Pedicure',
-      price: '$65',
-      duration: '75 min',
-      description: 'Luxurious foot treatment including scrub, mask, and extended massage.',
-      features: ['Foot soak', 'Callus removal', 'Scrub & mask', 'Extended massage']
-    },
-    {
-      id: 3,
-      title: 'Gel Manicure',
-      price: '$55',
-      duration: '45 min',
-      description: 'Long-lasting gel polish that stays perfect for up to 3 weeks.',
-      features: ['Nail prep', 'Gel application', 'UV curing', 'Top coat']
-    },
-    {
-      id: 4,
-      title: 'Custom Nail Art',
-      price: '$75+',
-      duration: '90 min',
-      description: 'Hand-painted designs and intricate patterns tailored to your vision.',
-      features: ['Design consultation', 'Hand-painted art', 'Premium materials', 'Finishing coat']
-    },
-    {
-      id: 5,
-      title: 'Gel Extensions',
-      price: '$85',
-      duration: '120 min',
-      description: 'Natural-looking extensions using premium hard gel for strength.',
-      features: ['Length consultation', 'Extension application', 'Shape & file', 'Polish or gel']
-    },
-    {
-      id: 6,
-      title: 'Bridal Package',
-      price: '$150',
-      duration: '3 hours',
-      description: 'Complete pre-wedding nail service with trial and day-of styling.',
-      features: ['Trial session', 'Custom design', 'Manicure & pedicure', 'Touch-up kit']
-    }
-  ];
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await getServices();
+        // Parse features JSON string if needed
+        const parsedServices = data.map(service => ({
+          ...service,
+          features: typeof service.features === 'string' 
+            ? JSON.parse(service.features) 
+            : service.features
+        }));
+        setServices(parsedServices);
+      } catch (err) {
+        console.error('Failed to fetch services:', err);
+        setError('Failed to load services. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   return (
     <div className="services-page">
@@ -74,6 +52,15 @@ const Services = () => {
 
       <section className="services-list-section">
         <div className="container">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-color)' }}>
+              <p>Loading services...</p>
+            </div>
+          ) : error ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#ff4d4d' }}>
+              <p>{error}</p>
+            </div>
+          ) : (
           <div className="services-grid">
             {services.map((service, index) => (
               <motion.div
@@ -111,6 +98,7 @@ const Services = () => {
               </motion.div>
             ))}
           </div>
+          )}
         </div>
       </section>
 

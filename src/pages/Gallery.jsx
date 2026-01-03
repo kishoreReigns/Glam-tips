@@ -1,26 +1,35 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Gallery.css';
+import { getGallery } from '../services/api';
 
 const Gallery = () => {
   const [filter, setFilter] = useState('all');
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const galleryItems = [
-    { id: 1, category: 'classic', title: 'Classic French', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=600&fit=crop' },
-    { id: 2, category: 'artistic', title: 'Floral Art', image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&h=600&fit=crop' },
-    { id: 3, category: 'luxury', title: 'Gold Accents', image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=600&h=600&fit=crop' },
-    { id: 4, category: 'classic', title: 'Red Elegance', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=600&fit=crop' },
-    { id: 5, category: 'artistic', title: 'Abstract Design', image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&h=600&fit=crop' },
-    { id: 6, category: 'luxury', title: 'Diamond Shine', image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=600&h=600&fit=crop' },
-    { id: 7, category: 'classic', title: 'Nude Perfection', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=600&fit=crop' },
-    { id: 8, category: 'artistic', title: 'Watercolor', image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&h=600&fit=crop' },
-    { id: 9, category: 'luxury', title: 'Crystal Glamour', image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=600&h=600&fit=crop' }
-  ];
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const data = await getGallery();
+        setGalleryItems(data);
+      } catch (err) {
+        console.error('Failed to fetch gallery:', err);
+        setError('Failed to load gallery. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGallery();
+  }, []);
 
   const categories = [
     { id: 'all', name: 'All Designs' },
+    { id: 'nail-art', name: 'Nail Art' },
+    { id: 'bridal', name: 'Bridal' },
     { id: 'classic', name: 'Classic' },
-    { id: 'artistic', name: 'Artistic' },
     { id: 'luxury', name: 'Luxury' }
   ];
 
@@ -71,7 +80,20 @@ const Gallery = () => {
             className="gallery-grid"
             layout
           >
-            {filteredItems.map((item, index) => (
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', gridColumn: '1/-1', color: 'var(--text-color)' }}>
+                <p>Loading gallery...</p>
+              </div>
+            ) : error ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', gridColumn: '1/-1', color: '#ff4d4d' }}>
+                <p>{error}</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', gridColumn: '1/-1', color: 'var(--text-color)' }}>
+                <p>No gallery items found.</p>
+              </div>
+            ) : (
+              filteredItems.map((item, index) => (
               <motion.div
                 key={item.id}
                 className="gallery-item glass-card"
@@ -83,13 +105,14 @@ const Gallery = () => {
                 whileHover={{ y: -10 }}
               >
                 <div className="gallery-image">
-                  <img src={item.image} alt={item.title} />
+                  <img src={item.image_url} alt={item.title} />
                   <div className="gallery-overlay">
                     <h3>{item.title}</h3>
+                    {item.description && <p>{item.description}</p>}
                   </div>
                 </div>
               </motion.div>
-            ))}
+            )))}
           </motion.div>
         </div>
       </section>

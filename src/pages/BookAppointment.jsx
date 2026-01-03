@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './BookAppointment.css';
+import { createAppointment } from '../services/api';
 
 const BookAppointment = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,10 @@ const BookAppointment = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const services = [
     'Luxury Spa Manicure',
@@ -24,23 +29,79 @@ const BookAppointment = () => {
     'Bridal Package'
   ];
 
-  const timeSlots = [
+  const allTimeSlots = [
     '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM',
     '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
   ];
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  // Fetch available slots when date changes
+  useEffect(() => {
+    if (formData.date) {
+      fetchAvailableSlots(formData.date);
+    } else {
+      setAvailableSlots(allTimeSlots);
+    }
+  }, [formData.date]);
+
+  const fetchAvailableSlots = async (date) => {
+    setLoadingSlots(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/available-slots/${date}`);
+      const data = await response.json();
+      setAvailableSlots(data.availableSlots);
+    } catch (err) {
+      console.error('Error fetching available slots:', err);
+      setAvailableSlots(allTimeSlots); // Fallback to all slots if error
+    } finally {
+      setLoadingSlots(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // If date changed, reset time selection
+    if (name === 'date') {
+      setFormData({
+        ...formData,
+        date: value,
+        time: ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    // Here you would typically send the data to your backend
-    console.log('Booking submitted:', formData);
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Format data for backend API
+      const appointmentData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        appointment_date: formData.date,
+        appointment_time: formData.time,
+        service: formData.service,
+        message: formData.message
+      };
+      
+      // Send to backend
+      const response = await createAppointment(appointmentData);
+      console.log('Booking successful:', response);
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Booking failed:', err);
+      setError(err.message || 'Failed to book appointment. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -186,14 +247,28 @@ const BookAppointment = () => {
                     value={formData.time}
                     onChange={handleChange}
                     required
+                    disabled={!formData.date || loadingSlots}
                   >
-                    <option value="">Choose a time</option>
-                    {timeSlots.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
+                    <option value="">
+                      {!formData.date ? 'Select a date first' : loadingSlots ? 'Loading slots...' : 'Choose a time'}
+                    </option>
+                    {availableSlots.length > 0 ? (
+                      availableSlots.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))
+                    ) : (
+                      !loadingSlots && formData.date && (
+                        <option value="" disabled>No slots available for this date</option>
+                      )
+                    )}
                   </select>
+                  {formData.date && availableSlots.length === 0 && !loadingSlots && (
+                    <small style={{color: 'var(--primary-color)', marginTop: '5px', display: 'block'}}>
+                      All time slots are booked for this date. Please select another date.
+                    </small>
+                  )}
                 </div>
               </div>
 
@@ -209,13 +284,27 @@ const BookAppointment = () => {
                 />
               </div>
 
+              {error && (
+                <div className="error-message" style={{
+                  background: 'rgba(255, 77, 77, 0.1)',
+                  border: '1px solid rgba(255, 77, 77, 0.3)',
+                  color: '#ff4d4d',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  marginBottom: '20px'
+                }}>
+                  {error}
+                </div>
+              )}
+
               <motion.button
                 type="submit"
                 className="btn btn-submit"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                disabled={loading}
               >
-                Confirm Booking
+                {loading ? 'Booking...' : 'Confirm Booking'}
               </motion.button>
             </form>
           </motion.div>

@@ -7,6 +7,8 @@ import Gallery from './pages/Gallery';
 import Services from './pages/Services';
 import BookAppointment from './pages/BookAppointment';
 import Themes from './pages/Themes';
+import Admin from './pages/Admin';
+import MyBookings from './pages/MyBookings';
 import './App.css';
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
               <Route path="/services" element={<Services />} />
               <Route path="/book" element={<BookAppointment />} />
               <Route path="/themes" element={<Themes />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/my-bookings" element={<MyBookings />} />
             </Routes>
           </main>
           <Footer />
