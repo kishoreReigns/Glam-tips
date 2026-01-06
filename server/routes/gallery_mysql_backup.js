@@ -6,10 +6,9 @@ const router = express.Router();
 // Get all gallery items
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
+    const [items] = await pool.query(
       "SELECT * FROM gallery ORDER BY created_at DESC"
     );
-    const items = result.rows;
     res.json(items);
   } catch (error) {
     console.error("Error fetching gallery items:", error);
@@ -20,10 +19,9 @@ router.get("/", async (req, res) => {
 // Get gallery item by ID
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM gallery WHERE id = $1", [
+    const [item] = await pool.query("SELECT * FROM gallery WHERE id = ?", [
       req.params.id,
     ]);
-    const item = result.rows;
 
     if (item.length === 0) {
       return res.status(404).json({ error: "Gallery item not found" });
@@ -41,14 +39,14 @@ router.post("/", async (req, res) => {
   const { title, description, image_url, category } = req.body;
 
   try {
-    const result = await pool.query(
-      "INSERT INTO gallery (title, description, image_url, category) VALUES ($1, $2, $3, $4) RETURNING id",
+    const [result] = await pool.query(
+      "INSERT INTO gallery (title, description, image_url, category) VALUES (?, ?, ?, ?)",
       [title, description || "", image_url, category || "nail-art"]
     );
 
     res.status(201).json({
       message: "Gallery item created successfully",
-      itemId: result.rows[0].id,
+      itemId: result.insertId,
     });
   } catch (error) {
     console.error("Error creating gallery item:", error);
@@ -61,12 +59,12 @@ router.put("/:id", async (req, res) => {
   const { title, description, image_url, category } = req.body;
 
   try {
-    const result = await pool.query(
-      "UPDATE gallery SET title = $1, description = $2, image_url = $3, category = $4 WHERE id = $5",
+    const [result] = await pool.query(
+      "UPDATE gallery SET title = ?, description = ?, image_url = ?, category = ? WHERE id = ?",
       [title, description, image_url, category, req.params.id]
     );
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Gallery item not found" });
     }
 
@@ -80,11 +78,11 @@ router.put("/:id", async (req, res) => {
 // Delete gallery item (Admin)
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM gallery WHERE id = $1", [
+    const [result] = await pool.query("DELETE FROM gallery WHERE id = ?", [
       req.params.id,
     ]);
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Gallery item not found" });
     }
 

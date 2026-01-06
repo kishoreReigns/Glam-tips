@@ -6,10 +6,9 @@ const router = express.Router();
 // Get all services
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
+    const [services] = await pool.query(
       "SELECT * FROM services ORDER BY id ASC"
     );
-    const services = result.rows;
     res.json(services);
   } catch (error) {
     console.error("Error fetching services:", error);
@@ -20,10 +19,9 @@ router.get("/", async (req, res) => {
 // Get service by ID
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM services WHERE id = $1", [
+    const [service] = await pool.query("SELECT * FROM services WHERE id = ?", [
       req.params.id,
     ]);
-    const service = result.rows;
 
     if (service.length === 0) {
       return res.status(404).json({ error: "Service not found" });
@@ -38,17 +36,17 @@ router.get("/:id", async (req, res) => {
 
 // Create new service (Admin)
 router.post("/", async (req, res) => {
-  const { name, price, duration, description, features, image_url } = req.body;
+  const { title, price, duration, description, features } = req.body;
 
   try {
-    const result = await pool.query(
-      "INSERT INTO services (name, price, duration, description, features, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-      [name, price, duration, description, JSON.stringify(features), image_url || null]
+    const [result] = await pool.query(
+      "INSERT INTO services (title, price, duration, description, features) VALUES (?, ?, ?, ?, ?)",
+      [title, price, duration, description, JSON.stringify(features)]
     );
 
     res.status(201).json({
       message: "Service created successfully",
-      serviceId: result.rows[0].id,
+      serviceId: result.insertId,
     });
   } catch (error) {
     console.error("Error creating service:", error);
@@ -58,23 +56,22 @@ router.post("/", async (req, res) => {
 
 // Update service (Admin)
 router.put("/:id", async (req, res) => {
-  const { name, price, duration, description, features, image_url } = req.body;
+  const { title, price, duration, description, features } = req.body;
 
   try {
-    const result = await pool.query(
-      "UPDATE services SET name = $1, price = $2, duration = $3, description = $4, features = $5, image_url = $6 WHERE id = $7",
+    const [result] = await pool.query(
+      "UPDATE services SET title = ?, price = ?, duration = ?, description = ?, features = ? WHERE id = ?",
       [
-        name,
+        title,
         price,
         duration,
         description,
         JSON.stringify(features),
-        image_url,
         req.params.id,
       ]
     );
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Service not found" });
     }
 
@@ -88,11 +85,11 @@ router.put("/:id", async (req, res) => {
 // Delete service (Admin)
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM services WHERE id = $1", [
+    const [result] = await pool.query("DELETE FROM services WHERE id = ?", [
       req.params.id,
     ]);
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Service not found" });
     }
 

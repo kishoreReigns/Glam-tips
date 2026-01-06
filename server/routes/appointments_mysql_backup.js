@@ -16,8 +16,8 @@ const router = express.Router();
 // Get all appointments
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM appointments ORDER BY appointment_date DESC, appointment_time DESC"
+    const result = await db.query(
+      'SELECT * FROM appointments ORDER BY appointment_date DESC, appointment_time DESC'
     );
     const appointments = result.rows;
     res.json(appointments);
@@ -33,11 +33,10 @@ router.get("/available-slots/:date", async (req, res) => {
     const { date } = req.params;
 
     // Get all booked slots for the date (excluding cancelled)
-    const result = await pool.query(
-      "SELECT appointment_time FROM appointments WHERE appointment_date = $1 AND status != $2",
-      [date, "cancelled"]
+    const [bookedSlots] = await pool.query(
+      "SELECT appointment_time FROM appointments WHERE appointment_date = ? AND status != 'cancelled'",
+      [date]
     );
-    const bookedSlots = result.rows;
 
     // Define all possible time slots (9 AM - 6 PM)
     const allSlots = [
@@ -81,11 +80,10 @@ router.get("/available-slots/:date", async (req, res) => {
 // Get appointment by ID
 router.get("/:id", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM appointments WHERE id = $1",
+    const [appointment] = await pool.query(
+      "SELECT * FROM appointments WHERE id = ?",
       [req.params.id]
     );
-    const appointment = result.rows;
 
     if (appointment.length === 0) {
       return res.status(404).json({ error: "Appointment not found" });
@@ -126,11 +124,10 @@ router.post("/", async (req, res) => {
 
   try {
     // Check if time slot is already booked
-    const existingResult = await pool.query(
-      "SELECT * FROM appointments WHERE appointment_date = $1 AND appointment_time = $2 AND status != $3",
+    const [existing] = await pool.query(
+      "SELECT * FROM appointments WHERE appointment_date = ? AND appointment_time = ? AND status != ?",
       [appointment_date, appointment_time, "cancelled"]
     );
-    const existing = existingResult.rows;
 
     if (existing.length > 0) {
       return res.status(409).json({
@@ -138,10 +135,10 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const result = await pool.query(
+    const [result] = await pool.query(
       `INSERT INTO appointments 
        (name, email, phone, appointment_date, appointment_time, service, message, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         name,
         email,
@@ -150,11 +147,10 @@ router.post("/", async (req, res) => {
         appointment_time,
         service,
         message || "",
-        "pending",
       ]
     );
 
-    const appointmentId = result.rows[0].id;
+    const appointmentId = result.insertId;
 
     console.log("📧 Preparing to send confirmation email...");
     console.log("Email will be sent to:", email);
@@ -220,12 +216,12 @@ router.patch("/:id/status", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      "UPDATE appointments SET status = $1 WHERE id = $2",
+    const [result] = await pool.query(
+      "UPDATE appointments SET status = ? WHERE id = ?",
       [status, req.params.id]
     );
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
@@ -239,11 +235,10 @@ router.patch("/:id/status", async (req, res) => {
 // Get appointment by email (for customer booking history)
 router.get("/customer/:email", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM appointments WHERE email = $1 ORDER BY appointment_date DESC, appointment_time DESC",
+    const [appointments] = await pool.query(
+      "SELECT * FROM appointments WHERE email = ? ORDER BY appointment_date DESC, appointment_time DESC",
       [req.params.email]
     );
-    const appointments = result.rows;
     res.json(appointments);
   } catch (error) {
     console.error("Error fetching customer appointments:", error);
@@ -254,11 +249,10 @@ router.get("/customer/:email", async (req, res) => {
 // Get available time slots for a specific date
 router.get("/availability/:date", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT appointment_time FROM appointments WHERE appointment_date = $1 AND status != $2",
+    const [bookedSlots] = await pool.query(
+      "SELECT appointment_time FROM appointments WHERE appointment_date = ? AND status != ?",
       [req.params.date, "cancelled"]
     );
-    const bookedSlots = result.rows;
 
     const allSlots = [
       "10:00 AM",
@@ -298,11 +292,10 @@ router.put("/:id", async (req, res) => {
 
   try {
     // Check if new time slot is available
-    const existingResult = await pool.query(
-      "SELECT * FROM appointments WHERE appointment_date = $1 AND appointment_time = $2 AND status != $3 AND id != $4",
+    const [existing] = await pool.query(
+      "SELECT * FROM appointments WHERE appointment_date = ? AND appointment_time = ? AND status != ? AND id != ?",
       [appointment_date, appointment_time, "cancelled", req.params.id]
     );
-    const existing = existingResult.rows;
 
     if (existing.length > 0) {
       return res.status(409).json({
@@ -311,18 +304,17 @@ router.put("/:id", async (req, res) => {
     }
 
     // Get appointment details for email
-    const appointmentResult = await pool.query(
-      "SELECT * FROM appointments WHERE id = $1",
+    const [appointment] = await pool.query(
+      "SELECT * FROM appointments WHERE id = ?",
       [req.params.id]
     );
-    const appointment = appointmentResult.rows;
 
-    const result = await pool.query(
-      "UPDATE appointments SET appointment_date = $1, appointment_time = $2 WHERE id = $3",
+    const [result] = await pool.query(
+      "UPDATE appointments SET appointment_date = ?, appointment_time = ? WHERE id = ?",
       [appointment_date, appointment_time, req.params.id]
     );
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
@@ -349,18 +341,17 @@ router.put("/:id", async (req, res) => {
 router.patch("/:id/cancel", async (req, res) => {
   try {
     // Get appointment details for email
-    const appointmentResult = await pool.query(
-      "SELECT * FROM appointments WHERE id = $1",
+    const [appointment] = await pool.query(
+      "SELECT * FROM appointments WHERE id = ?",
       [req.params.id]
     );
-    const appointment = appointmentResult.rows;
 
-    const result = await pool.query(
-      "UPDATE appointments SET status = $1 WHERE id = $2",
-      ["cancelled", req.params.id]
+    const [result] = await pool.query(
+      "UPDATE appointments SET status = 'cancelled' WHERE id = ?",
+      [req.params.id]
     );
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
@@ -386,11 +377,11 @@ router.patch("/:id/cancel", async (req, res) => {
 // Delete appointment (Admin)
 router.delete("/:id", async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM appointments WHERE id = $1", [
+    const [result] = await pool.query("DELETE FROM appointments WHERE id = ?", [
       req.params.id,
     ]);
 
-    if (result.rowCount === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
