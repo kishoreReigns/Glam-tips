@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "http://glam-tips-nid8.vercel.app/api";
 
 // Services API
 export const getServices = async () => {
