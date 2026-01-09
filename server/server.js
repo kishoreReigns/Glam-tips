@@ -21,6 +21,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:5173",
+      "https://glam-tips-git-main-kishorereigns-projects.vercel.app",
       process.env.CLIENT_URL,
     ],
     credentials: true,
