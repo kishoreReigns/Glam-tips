@@ -38,7 +38,8 @@ const MyBookings = () => {
   const fetchAvailableSlots = async (date) => {
     setLoadingSlots(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/available-slots/${date}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
+      const response = await fetch(`${API_BASE_URL}/appointments/available-slots/${date}`);
       const data = await response.json();
       setAvailableSlots(data.availableSlots);
     } catch (err) {
