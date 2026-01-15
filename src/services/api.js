@@ -1,6 +1,9 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://glam-tips-nid8.vercel.app/api";
 
+console.log("🔗 API Base URL:", API_BASE_URL);
+console.log("🌍 Environment:", import.meta.env.MODE);
+
 // Services API
 export const getServices = async () => {
   try {
