@@ -33,6 +33,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Test database connection on startup
 testConnection();
 
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    name: "Glam Tips API",
+    version: "1.0.0",
+    status: "running",
+    endpoints: {
+      health: "/api/health",
+      services: "/api/services",
+      appointments: "/api/appointments",
+      gallery: "/api/gallery",
+    },
+  });
+});
+
 // Routes
 app.use("/api/services", servicesRoutes);
 app.use("/api/appointments", appointmentsRoutes);
@@ -58,7 +73,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📝 API Documentation: http://localhost:${PORT}/api/health`);
 });
+
+// Export for Vercel
+export default app;
