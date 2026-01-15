@@ -10,11 +10,24 @@ let calendar = null;
 // Initialize OAuth2 client with service account or OAuth credentials
 const initializeCalendar = () => {
   try {
+    console.log("🔄 Initializing Google Calendar...");
+    console.log("Environment check:");
+    console.log(
+      "- GOOGLE_SERVICE_ACCOUNT_KEY:",
+      process.env.GOOGLE_SERVICE_ACCOUNT_KEY ? "✅ Present" : "❌ Missing"
+    );
+    console.log(
+      "- GOOGLE_CALENDAR_ID:",
+      process.env.GOOGLE_CALENDAR_ID || "❌ Not set (using 'primary')"
+    );
+
     // Option 1: Using Service Account (Recommended for server-side)
     if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       const serviceAccountKey = JSON.parse(
         process.env.GOOGLE_SERVICE_ACCOUNT_KEY
       );
+      console.log("- Service Account Email:", serviceAccountKey.client_email);
+
       const auth = new google.auth.GoogleAuth({
         credentials: serviceAccountKey,
         scopes: ["https://www.googleapis.com/auth/calendar"],
@@ -22,6 +35,7 @@ const initializeCalendar = () => {
 
       calendar = google.calendar({ version: "v3", auth });
       console.log("✅ Google Calendar initialized with Service Account");
+      console.log("📅 Calendar events will be created in:", CALENDAR_ID);
       return true;
     }
 
@@ -50,9 +64,14 @@ const initializeCalendar = () => {
     console.warn(
       "⚠️ Google Calendar not configured - events will not be synced"
     );
+    console.warn("To enable calendar integration:");
+    console.warn("1. Set GOOGLE_SERVICE_ACCOUNT_KEY environment variable");
+    console.warn("2. Set GOOGLE_CALENDAR_ID environment variable (optional)");
+    console.warn("3. Share your calendar with the service account email");
     return false;
   } catch (error) {
     console.error("❌ Error initializing Google Calendar:", error.message);
+    console.error("Full error:", error);
     return false;
   }
 };
@@ -62,8 +81,15 @@ const isCalendarEnabled = initializeCalendar();
 
 // Create calendar event for appointment
 export const createCalendarEvent = async (appointmentDetails) => {
+  console.log("📅 Attempting to create calendar event...");
+  console.log("Calendar enabled:", isCalendarEnabled);
+  console.log("Calendar object:", calendar ? "Initialized" : "Not initialized");
+
   if (!isCalendarEnabled || !calendar) {
-    console.log("📅 Calendar integration disabled - skipping event creation");
+    console.log("⚠️ Calendar integration disabled - skipping event creation");
+    console.log(
+      "Reason: Calendar not properly configured with Google credentials"
+    );
     return { success: false, message: "Calendar not configured" };
   }
 

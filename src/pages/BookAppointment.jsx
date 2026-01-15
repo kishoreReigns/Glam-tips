@@ -29,6 +29,32 @@ const BookAppointment = () => {
     'Bridal Package'
   ];
 
+  // Convert 24-hour format to 12-hour AM/PM format
+  const convertTo12Hour = (time24) => {
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  // Convert 12-hour AM/PM format to 24-hour format
+  const convertTo24Hour = (time12) => {
+    const match = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return time12; // Return as-is if format doesn't match
+    
+    let [, hours, minutes, period] = match;
+    let hour = parseInt(hours);
+    
+    if (period.toUpperCase() === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (period.toUpperCase() === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+  };
+
   const allTimeSlots = [
     '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM',
     '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
@@ -49,7 +75,9 @@ const BookAppointment = () => {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
       const response = await fetch(`${API_BASE_URL}/appointments/available-slots/${date}`);
       const data = await response.json();
-      setAvailableSlots(data.availableSlots);
+      // Convert backend 24-hour format to 12-hour format for display
+      const slots12Hour = data.availableSlots.map(slot => convertTo12Hour(slot));
+      setAvailableSlots(slots12Hour);
     } catch (err) {
       console.error('Error fetching available slots:', err);
       setAvailableSlots(allTimeSlots); // Fallback to all slots if error
@@ -82,13 +110,13 @@ const BookAppointment = () => {
     setError('');
     
     try {
-      // Format data for backend API
+      // Format data for backend API (convert time to 24-hour format)
       const appointmentData = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         appointment_date: formData.date,
-        appointment_time: formData.time,
+        appointment_time: convertTo24Hour(formData.time),
         service: formData.service,
         message: formData.message
       };

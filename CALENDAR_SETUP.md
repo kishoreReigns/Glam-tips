@@ -4,6 +4,57 @@
 
 This guide will help you connect your Glam Tips booking system to your Google Calendar (theglamtips01@gmail.com) so that appointments are automatically added to your calendar.
 
+## 🚨 IMPORTANT: Production (Vercel) Setup
+
+### Calendar Working Locally but NOT in Production?
+
+If Google Calendar works in local development but not on your live Vercel deployment, you need to add the environment variables to Vercel:
+
+#### Step 1: Access Vercel Dashboard
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Select your **backend project** (glam-tips-nid8)
+3. Click on **Settings** → **Environment Variables**
+
+#### Step 2: Add These Environment Variables
+
+**Variable 1: GOOGLE_SERVICE_ACCOUNT_KEY**
+
+- Name: `GOOGLE_SERVICE_ACCOUNT_KEY`
+- Value: Copy the entire JSON from `server/.env` (the long JSON starting with `{"type":"service_account"...}`)
+- Environment: Select **Production**, **Preview**, and **Development**
+
+**Variable 2: GOOGLE_CALENDAR_ID**
+
+- Name: `GOOGLE_CALENDAR_ID`
+- Value: `theglamtips01@gmail.com`
+- Environment: Select **Production**, **Preview**, and **Development**
+
+#### Step 3: Redeploy
+
+1. Go to **Deployments** tab
+2. Click **...** on latest deployment → **Redeploy**
+
+#### Step 4: Verify in Logs
+
+Check deployment logs for:
+
+```
+✅ Google Calendar initialized with Service Account
+📅 Calendar events will be created in: theglamtips01@gmail.com
+```
+
+If you see:
+
+```
+❌ GOOGLE_SERVICE_ACCOUNT_KEY: Missing
+⚠️ Calendar integration disabled
+```
+
+Then the environment variables weren't added correctly.
+
+---
+
 ## Setup Steps
 
 ### Step 1: Enable Google Calendar API

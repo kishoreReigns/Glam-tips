@@ -13,6 +13,32 @@ const MyBookings = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  // Convert 24-hour format to 12-hour AM/PM format
+  const convertTo12Hour = (time24) => {
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  // Convert 12-hour AM/PM format to 24-hour format
+  const convertTo24Hour = (time12) => {
+    const match = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return time12; // Return as-is if format doesn't match
+    
+    let [, hours, minutes, period] = match;
+    let hour = parseInt(hours);
+    
+    if (period.toUpperCase() === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (period.toUpperCase() === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+  };
+
   const allTimeSlots = [
     '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM',
     '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
@@ -41,7 +67,9 @@ const MyBookings = () => {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
       const response = await fetch(`${API_BASE_URL}/appointments/available-slots/${date}`);
       const data = await response.json();
-      setAvailableSlots(data.availableSlots);
+      // Convert backend 24-hour format to 12-hour format for display
+      const slots12Hour = data.availableSlots.map(slot => convertTo12Hour(slot));
+      setAvailableSlots(slots12Hour);
     } catch (err) {
       console.error('Error fetching available slots:', err);
       setAvailableSlots(allTimeSlots);
@@ -56,7 +84,8 @@ const MyBookings = () => {
     setSearched(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/customer/${searchEmail}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
+      const response = await fetch(`${API_BASE_URL}/appointments/customer/${searchEmail}`);
       if (!response.ok) {
         throw new Error('Failed to fetch appointments');
       }
@@ -83,7 +112,8 @@ const MyBookings = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/${appointmentId}/cancel`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
+      const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/cancel`, {
         method: 'PATCH'
       });
 
@@ -118,14 +148,15 @@ const MyBookings = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`http://localhost:5000/api/appointments/${rescheduleData.id}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://glam-tips-nid8.vercel.app/api';
+      const response = await fetch(`${API_BASE_URL}/appointments/${rescheduleData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           appointment_date: rescheduleData.date,
-          appointment_time: rescheduleData.time
+          appointment_time: convertTo24Hour(rescheduleData.time)
         })
       });
 

@@ -17,6 +17,20 @@ const transporter = createTransport({
   },
 });
 
+// Convert 24-hour format to 12-hour AM/PM format
+const formatTime = (time24) => {
+  // If already in 12-hour format, return as is
+  if (time24.includes("AM") || time24.includes("PM")) {
+    return time24;
+  }
+
+  const [hours, minutes] = time24.split(":");
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 // Send booking confirmation email
 export const sendBookingConfirmation = async (appointmentDetails) => {
   const {
@@ -132,7 +146,7 @@ export const sendBookingConfirmation = async (appointmentDetails) => {
               </div>
               <div class="detail-row">
                 <span class="label">Time:</span>
-                <span class="value">${appointment_time}</span>
+                <span class="value">${formatTime(appointment_time)}</span>
               </div>
             </div>
             
@@ -287,7 +301,9 @@ export const sendRescheduleEmail = async (appointmentDetails) => {
                 month: "long",
                 day: "numeric",
               })}</span></li>
-              <li>Time: <span class="highlight">${appointment_time}</span></li>
+              <li>Time: <span class="highlight">${formatTime(
+                appointment_time
+              )}</span></li>
             </ul>
             <p>We look forward to seeing you!</p>
             <p>Best regards,<br>Glam Tips Nail Salon Team</p>
