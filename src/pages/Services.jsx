@@ -74,14 +74,14 @@ const Services = () => {
               >
                 <div className="service-header">
                   <div>
-                    <h3>{service.title}</h3>
-                    <p className="service-duration">{service.duration}</p>
+                    <h3>{service.name}</h3>
+                    <p className="service-duration">{service.duration} min</p>
                   </div>
-                  <div className="service-price">{service.price}</div>
+                  <div className="service-price">${service.price}</div>
                 </div>
                 <p className="service-description">{service.description}</p>
                 <ul className="service-features">
-                  {service.features.map((feature, idx) => (
+                  {service.features && service.features.map((feature, idx) => (
                     <li key={idx}>
                       <FaCheck className="check-icon" />
                       <span>{feature}</span>

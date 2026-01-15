@@ -352,12 +352,12 @@
 }
 
 /* Service and Gallery Item Actions */
-.service-item {
+/* .service-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-}
+} */
 
 .service-actions,
 .gallery-item-actions {

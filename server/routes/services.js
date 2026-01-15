@@ -6,11 +6,16 @@ const router = express.Router();
 // Get all services
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM services ORDER BY id ASC"
-    );
+    // Set cache control headers to prevent 304
+    res.set({
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    });
+
+    const result = await pool.query("SELECT * FROM services ORDER BY id ASC");
     const services = result.rows;
-    res.json(services);
+    res.status(200).json(services);
   } catch (error) {
     console.error("Error fetching services:", error);
     res.status(500).json({ error: "Failed to fetch services" });
@@ -43,7 +48,14 @@ router.post("/", async (req, res) => {
   try {
     const result = await pool.query(
       "INSERT INTO services (name, price, duration, description, features, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-      [name, price, duration, description, JSON.stringify(features), image_url || null]
+      [
+        name,
+        price,
+        duration,
+        description,
+        JSON.stringify(features),
+        image_url || null,
+      ]
     );
 
     res.status(201).json({

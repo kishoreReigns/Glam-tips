@@ -45,15 +45,15 @@ const Footer = () => {
             <ul className="footer-list">
               <li>
                 <FaMapMarkerAlt />
-                <span>123 Beauty Avenue<br />Beverly Hills, CA 90210</span>
+                <span>4/384<br />chennai,TamilNadu</span>
               </li>
               <li>
                 <FaPhone />
-                <span>(555) 123-4567</span>
+                <span>8939335572</span>
               </li>
               <li>
                 <FaEnvelope />
-                <span>hello@glamtips.com</span>
+                <span>theglamtips01@gmail.com</span>
               </li>
             </ul>
           </motion.div>
